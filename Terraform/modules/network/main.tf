@@ -44,13 +44,6 @@ resource "azurerm_subnet" "subnet-db" {
   address_prefixes     = ["10.0.3.0/24"]
 }
 
-# Subnet 4 - Bastion
-resource "azurerm_subnet" "subnet-bastion" {
-  name                 = "AzureBastionSubnet"
-  resource_group_name  = var.resource_group_name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.4.0/24"]
-}
 
 # front end integration subnet
 resource "azurerm_subnet" "frontend_integreation_subnet" {
