@@ -1,0 +1,40 @@
+stages:
+  - rg
+  - storage
+  - container
+  - acr
+
+variables:
+  LOCATION: "uksouth"
+  RESOURCE_GROUP: "movie-explorer-rg"
+  STORAGE_ACCOUNT: "lewisfuncstorage"
+  CONTAINER_NAME: "tfstate"
+  ACR_NAME: "lewisacr"
+
+create_rg:
+  stage: rg
+  image: mcr.microsoft.com/azure-cli
+  script:
+    - az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+    - az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
+
+create_storage:
+  stage: storage
+  image: mcr.microsoft.com/azure-cli
+  script:
+    - az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+    - az storage account create --name "$STORAGE_ACCOUNT" --resource-group "$RESOURCE_GROUP" --location "$LOCATION" --sku Standard_LRS
+
+create_container:
+  stage: container
+  image: mcr.microsoft.com/azure-cli
+  script:
+    - az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+    - az storage container create --name "$CONTAINER_NAME" --account-name "$STORAGE_ACCOUNT"
+
+create_acr:
+  stage: acr
+  image: mcr.microsoft.com/azure-cli
+  script:
+    - az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+    - az acr create --name "$ACR_NAME" --resource-group "$RESOURCE_GROUP" --sku Basic --location "$LOCATION"
