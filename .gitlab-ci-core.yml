@@ -14,6 +14,8 @@ variables:
 create_rg:
   stage: rg
   image: mcr.microsoft.com/azure-cli
+  rules:
+  - when: manual
   script:
     - az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
     - az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
@@ -21,6 +23,8 @@ create_rg:
 create_storage:
   stage: storage
   image: mcr.microsoft.com/azure-cli
+  rules:
+  - when: manual
   script:
     - az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
     - az storage account create --name "$STORAGE_ACCOUNT" --resource-group "$RESOURCE_GROUP" --location "$LOCATION" --sku Standard_LRS
@@ -35,6 +39,8 @@ create_container:
 create_acr:
   stage: acr
   image: mcr.microsoft.com/azure-cli
+  rules:
+  - when: manual
   script:
     - az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
     - az acr create --name "$ACR_NAME" --resource-group "$RESOURCE_GROUP" --sku Basic --location "$LOCATION"
