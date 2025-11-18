@@ -19,7 +19,7 @@ create_rg:
   script:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$ARM_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
     - az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
-
+    
 create_storage:
   stage: storage
   image: mcr.microsoft.com/azure-cli
