@@ -1,3 +1,10 @@
+include:
+  - local: '.gitlab-ci-core.yml'
+  - local: '.gitlab-ci-terraform.yml'
+  - local: '.gitlab-ci-app.yml'
+  - local: '.gitlab-ci-destroy.yml'
+
+
 stages:
   - deployinfra
 
