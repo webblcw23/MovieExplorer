@@ -1,3 +1,11 @@
+stages:
+  - rg
+  - storage
+  - container
+  - acr
+  - deployinfra  # if used in terraform file
+  - destroy       # if used later
+
 include:
   - local: '.gitlab-ci-core.yml'
   - local: '.gitlab-ci-terraform.yml'
