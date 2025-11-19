@@ -1,8 +1,13 @@
 stages:
-  - coredeployment # core items deploy (rg, storage, container, acr,)
-  - deployinfra  # main terraform resurces deploy
-  - deployapp   # to rebuild and redeploy app docker via docker - acr - web app
-  - destroy       # if used later
+  - rg
+  - storage
+  - container
+  - acr
+  - terraforminit
+  - terraformplan
+  - terraformapply
+  - deployapp
+  - destroy
 
 include:
   - local: '.gitlab-ci-core.yml'
