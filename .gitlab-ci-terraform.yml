@@ -13,11 +13,11 @@ variables:
 
 terraforminit:
   stage: terraforminit
-  image: hashicorp/terraform:latest
+  image: mcr.microsoft.com/azure-cli
   rules:
   - when: manual
   before_script:
-    - apk add --no-cache bash curl jq python3 py3-pip
+    - apk add --no-cache bash curl jq python3 py3-pip terraform
     - pip3 install azure-cli
     - az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
   script:
