@@ -8,4 +8,4 @@ include:
   - local: '.gitlab-ci-core.yml'
   - local: '.gitlab-ci-terraform.yml'
   - local: '.gitlab-ci-deployapp.yml'
-  - local: 'gitlab-ci-destoy.yml'
+  - local: 'gitlab-ci-destroy.yml'
