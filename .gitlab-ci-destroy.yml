@@ -18,7 +18,7 @@ terraform_destroy:
     - pip3 install azure-cli
     - curl -fsSL https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip -o terraform.zip
     - unzip terraform.zip && mv terraform /usr/local/bin/terraform && terraform -version
-    - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
+    - az login -u "$USEREMAIL_KEY" -p "$USER_PASSWORD_KEY"
   script:
     - echo "Initializing Terraform..."
     - terraform -chdir=$WORKING_DIR init -backend-config="resource_group_name=$RESOURCE_GROUP" -backend-config="storage_account_name=$STORAGE_ACCOUNT" -backend-config="container_name=$CONTAINER_NAME" -backend-config="key=$BACKEND_KEY" -reconfigure -upgrade -var="sql_admin_username=$SQL_ADMIN_USERNAME" -var="sql_admin_password=$SQL_ADMIN_PASSWORD" -var="subscription_id=$SUBSCRIPTION_ID"
