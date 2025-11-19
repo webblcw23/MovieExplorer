@@ -23,12 +23,7 @@ terraforminit:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
   script:
     - echo "Initializing Terraform..."
-    - terraform -chdir=$WORKING_DIR init \
-        -backend-config="resource_group_name=$RESOURCE_GROUP" \
-        -backend-config="storage_account_name=$STORAGE_ACCOUNT" \
-        -backend-config="container_name=$CONTAINER_NAME" \
-        -backend-config="key=$BACKEND_KEY" \
-        -reconfigure -upgrade
+    - terraform -chdir=$WORKING_DIR init -backend-config="resource_group_name=$RESOURCE_GROUP" -backend-config="storage_account_name=$STORAGE_ACCOUNT" -backend-config="container_name=$CONTAINER_NAME" -backend-config="key=$BACKEND_KEY" -reconfigure -upgrade
     - echo "Validating Terraform..."
     - terraform -chdir=$WORKING_DIR validate
     - echo "Formatting Terraform files..."
@@ -44,10 +39,7 @@ terraformplan:
   image: hashicorp/terraform:latest
   script:
     - echo "Planning Terraform..."
-    - terraform -chdir=$WORKING_DIR plan \
-        -var="subscription_id=$SUBSCRIPTION_ID" \
-        -var="sql_admin_username=$SQL_ADMIN_USERNAME" \
-        -var="sql_admin_password=$SQL_ADMIN_PASSWORD"
+    - terraform -chdir=$WORKING_DIR plan -var="subscription_id=$SUBSCRIPTION_ID" -var="sql_admin_username=$SQL_ADMIN_USERNAME" -var="sql_admin_password=$SQL_ADMIN_PASSWORD"
     - echo "Terraform plan completed."
 
 terraformapply:
@@ -59,9 +51,5 @@ terraformapply:
   image: hashicorp/terraform:latest
   script:
     - echo "Applying Terraform..."
-    - terraform -chdir=$WORKING_DIR apply \
-        -auto-approve \
-        -var="subscription_id=$SUBSCRIPTION_ID" \
-        -var="sql_admin_username=$SQL_ADMIN_USERNAME" \
-        -var="sql_admin_password=$SQL_ADMIN_PASSWORD"
+    - terraform -chdir=$WORKING_DIR apply -auto-approve -var="subscription_id=$SUBSCRIPTION_ID" -var="sql_admin_username=$SQL_ADMIN_USERNAME" -var="sql_admin_password=$SQL_ADMIN_PASSWORD"
     - echo "Terraform applied successfully."
