@@ -15,7 +15,7 @@ deploy_app:
   rules:
     - when: manual
   before_script:
-    #- az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
+    - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
     - az acr login --name "$DOCKER_REGISTRY"
     - apk add --no-cache docker
   script:
