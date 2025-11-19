@@ -17,10 +17,10 @@ terraforminit:
     - when: manual
   before_script:
     - apt-get update && apt-get install -y curl jq python3-pip unzip gnupg software-properties-common
-   # - pip3 install azure-cli
+    - pip3 install azure-cli
     - curl -fsSL https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip -o terraform.zip
     - unzip terraform.zip && mv terraform /usr/local/bin/terraform && terraform -version
-   # - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
+    - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
   script:
     - echo "Shell is working — YAML is valid"
     - echo "Initializing Terraform..."
