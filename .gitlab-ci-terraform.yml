@@ -12,7 +12,7 @@ variables:
 
 terraforminit:
   stage: terraforminit
-  image: hashicorp/terraform:1.5.7
+  image: ubuntu:22.04
   rules:
     - when: manual
   before_script:
