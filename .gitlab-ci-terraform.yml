@@ -22,6 +22,7 @@ terraforminit:
     - unzip terraform.zip && mv terraform /usr/local/bin/terraform && terraform -version
    # - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
   script:
+    - echo "Shell is working — YAML is valid"
     - echo "Initializing Terraform..."
     - terraform -chdir=$WORKING_DIR init -backend-config="resource_group_name=$RESOURCE_GROUP" -backend-config="storage_account_name=$STORAGE_ACCOUNT" -backend-config="container_name=$CONTAINER_NAME" -backend-config="key=$BACKEND_KEY" -reconfigure -upgrade
     - echo "Validating Terraform..."
