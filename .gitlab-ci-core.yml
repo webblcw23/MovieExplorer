@@ -41,8 +41,6 @@ create_acr:
   stage: acr
   needs: [create_container]
   image: mcr.microsoft.com/azure-cli
-  rules:
-  - when: manual
   script:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
     - az acr create --name "$ACR_NAME" --resource-group "$RESOURCE_GROUP" --sku Basic --location "$LOCATION"

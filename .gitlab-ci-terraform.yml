@@ -40,7 +40,7 @@ terraformplan:
   needs:
     - terraforminit  
   rules:
-  - when: success  
+  - when: on_success  
   image: hashicorp/terraform:latest
   script:
     - echo "Planning Terraform..."
@@ -55,7 +55,7 @@ terraformapply:
   needs:
     - terraformplan
   rules:
-  - when: success
+  - when: on_success
   image: hashicorp/terraform:latest
   script:
     - echo "Applying Terraform..."
