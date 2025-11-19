@@ -1,6 +1,8 @@
 
 stages:
-  - deployinfra
+  - terraforminit
+  - terraformplan
+  - terraformapply
 
 variables:
   WORKING_DIR: "Terraform/"
@@ -9,8 +11,8 @@ variables:
   STORAGE_ACCOUNT: "lewisfuncstorage"
   CONTAINER_NAME: "tfstate"
 
-deploy_infra:
-  stage: deployinfra
+terraforminit:
+  stage: terraforminit
   image: hashicorp/terraform:latest
   rules:
   - when: manual
@@ -26,19 +28,40 @@ deploy_infra:
         -backend-config="container_name=$CONTAINER_NAME" \
         -backend-config="key=$BACKEND_KEY" \
         -reconfigure -upgrade
-
     - echo "Validating Terraform..."
     - terraform -chdir=$WORKING_DIR validate
+    - echo "Terraform initialized and validated."
+    - echo "Formatting Terraform files..."
+    - terraform -chdir=$WORKING_DIR fmt -recursive
+    - echo "Terraform files formatted."
 
+terraformplan:
+  stage: terraformplan  
+  needs:
+    - terraforminit  
+  rules:
+  - when: success  
+  image: hashicorp/terraform:latest
+  script:
     - echo "Planning Terraform..."
     - terraform -chdir=$WORKING_DIR plan \
         -var="subscription_id=$SUBSCRIPTION_ID" \
         -var="sql_admin_username=$SQL_ADMIN_USERNAME" \
         -var="sql_admin_password=$SQL_ADMIN_PASSWORD"
+    - echo "Terraform plan completed."
 
+terraformapply:
+  stage: terraformapply
+  needs:
+    - terraformplan
+  rules:
+  - when: success
+  image: hashicorp/terraform:latest
+  script:
     - echo "Applying Terraform..."
     - terraform -chdir=$WORKING_DIR apply \
         -auto-approve \
         -var="subscription_id=$SUBSCRIPTION_ID" \
         -var="sql_admin_username=$SQL_ADMIN_USERNAME" \
         -var="sql_admin_password=$SQL_ADMIN_PASSWORD"
+    - echo "Terraform applied successfully."    
