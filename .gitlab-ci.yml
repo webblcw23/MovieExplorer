@@ -1,5 +1,6 @@
 workflow:
-  when: always  # Always create a pipeline on push
+  rules:
+  - when: always  # Always create a pipeline on push
 
 stages:
   - core 
@@ -37,7 +38,8 @@ create_rg:
   script:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
     - az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
-  when: manual
+  rules:
+   - when: manual
 
 create_storage:
   stage: core
