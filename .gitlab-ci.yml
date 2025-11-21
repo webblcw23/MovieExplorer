@@ -4,17 +4,190 @@ workflow:
 
 stages:
   - noop
+  - rg
+  - storage
+  - container
+  - acr
+  - terraforminit
+  - terraformplan
+  - terraformapply
+  - deployapp
+  - destroy
 
+# Placeholder job to anchor pipeline
 noop_job:
   stage: noop
   script:
-    - echo "This is a placeholder job to make the pipeline visible."
+    - echo "Pipeline created. Awaiting manual triggers."
   when: manual
   rules:
     - when: always
 
-include:
-  - local: 'GitLab/.gitlab-ci-core.yml'
-  - local: 'GitLab/.gitlab-ci-terraform.yml'
-  - local: 'GitLab/.gitlab-ci-deployapp.yml'
-  - local: 'GitLab/.gitlab-ci-destroy.yml'
+# ────────────────────────────────
+# 🧱 Core Infrastructure Setup
+# ────────────────────────────────
+
+variables:
+  LOCATION: "uksouth"
+  RESOURCE_GROUP: "movie-explorer-rg"
+  STORAGE_ACCOUNT: "lewisfuncstorage"
+  CONTAINER_NAME: "tfstate"
+  ACR_NAME: "lewisacr"
+
+create_rg:
+  stage: rg
+  image: mcr.microsoft.com/azure-cli
+  script:
+    - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
+    - az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
+  rules:
+    - if: '$RUN_CORE_SETUP == "true"'
+      when: manual
+    - when: never
+
+create_storage:
+  stage: storage
+  needs: [create_rg]
+  image: mcr.microsoft.com/azure-cli
+  script:
+    - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
+    - az storage account create --name "$STORAGE_ACCOUNT" --resource-group "$RESOURCE_GROUP" --location "$LOCATION" --sku Standard_LRS
+  rules:
+    - if: '$RUN_CORE_SETUP == "true"'
+      when: manual
+    - when: never
+
+create_container:
+  stage: container
+  needs: [create_storage]
+  image: mcr.microsoft.com/azure-cli
+  script:
+    - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
+    - az storage container create --name "$CONTAINER_NAME" --account-name "$STORAGE_ACCOUNT"
+  rules:
+    - if: '$RUN_CORE_SETUP == "true"'
+      when: manual
+    - when: never
+
+create_acr:
+  stage: acr
+  needs: [create_container]
+  image: mcr.microsoft.com/azure-cli
+  script:
+    - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
+    - az acr create --name "$ACR_NAME" --resource-group "$RESOURCE_GROUP" --sku Basic --location "$LOCATION"
+  rules:
+    - if: '$RUN_CORE_SETUP == "true"'
+      when: manual
+    - when: never
+
+# ────────────────────────────────
+# 🌍 Terraform Infrastructure
+# ────────────────────────────────
+
+variables:
+  WORKING_DIR: "Terraform/"
+  BACKEND_KEY: "movieexplorer-prod.tfstate"
+
+terraforminit:
+  stage: terraforminit
+  image: ubuntu:22.04
+  before_script:
+    - apt-get update && apt-get install -y curl jq python3-pip unzip gnupg software-properties-common
+    - pip3 install azure-cli
+    - curl -fsSL https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip -o terraform.zip
+    - unzip terraform.zip && mv terraform /usr/local/bin/terraform && terraform -version
+    - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
+  script:
+    - terraform -chdir=$WORKING_DIR init -backend-config="resource_group_name=$RESOURCE_GROUP" -backend-config="storage_account_name=$STORAGE_ACCOUNT" -backend-config="container_name=$CONTAINER_NAME" -backend-config="key=$BACKEND_KEY" -reconfigure -upgrade
+    - terraform -chdir=$WORKING_DIR validate
+    - terraform -chdir=$WORKING_DIR fmt -recursive
+  rules:
+    - if: '$RUN_MAIN_TF == "true"'
+      when: manual
+    - when: never
+
+terraformplan:
+  stage: terraformplan  
+  needs: [terraforminit]  
+  image: hashicorp/terraform:latest
+  script:
+    - terraform -chdir=$WORKING_DIR plan -var="subscription_id=$SUBSCRIPTION_ID" -var="sql_admin_username=$SQL_ADMIN_USERNAME" -var="sql_admin_password=$SQL_ADMIN_PASSWORD"
+  rules:
+    - if: '$RUN_MAIN_TF == "true"'
+      when: manual
+    - when: never
+
+terraformapply:
+  stage: terraformapply
+  needs: [terraformplan]
+  image: hashicorp/terraform:latest
+  script:
+    - terraform -chdir=$WORKING_DIR apply -auto-approve -var="subscription_id=$SUBSCRIPTION_ID" -var="sql_admin_username=$SQL_ADMIN_USERNAME" -var="sql_admin_password=$SQL_ADMIN_PASSWORD"
+  rules:
+    - if: '$RUN_MAIN_TF == "true"'
+      when: manual
+    - when: never
+
+# ────────────────────────────────
+# 🚀 App Deployment
+# ────────────────────────────────
+
+variables:
+  DOCKER_REGISTRY: "lewisacr.azurecr.io"
+  BACKEND_IMAGE_NAME: "movieexplorer-backend"
+  FRONTEND_IMAGE_NAME: "movieexplorer-frontend"
+  WEBAPP_NAME: "MovieExplorerAppBackend"
+  SQL_SERVER_NAME: "sql-server-lewis-test"
+
+deploy_app:
+  stage: deployapp
+  image: mcr.microsoft.com/azure-cli
+  before_script:
+    - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
+    - az acr login --name "$DOCKER_REGISTRY"
+    - apk add --no-cache docker
+  script:
+    - docker build --platform linux/amd64 -t "$DOCKER_REGISTRY/$BACKEND_IMAGE_NAME:latest" movieexplorer-backend-api
+    - docker push "$DOCKER_REGISTRY/$BACKEND_IMAGE_NAME:latest"
+    - docker build --platform linux/amd64 -t "$DOCKER_REGISTRY/$FRONTEND_IMAGE_NAME:latest" movieexplorer-frontend
+    - docker push "$DOCKER_REGISTRY/$FRONTEND_IMAGE_NAME:latest"
+    - IP=$(az webapp show --name "$WEBAPP_NAME" --resource-group "$RESOURCE_GROUP" --query outboundIpAddresses -o tsv)
+    - az sql server firewall-rule create --resource-group "$RESOURCE_GROUP" --server "$SQL_SERVER_NAME" --name "AllowAppService" --start-ip-address "$IP" --end-ip-address "$IP"
+  rules:
+    - if: '$RUN_APP_DEPLOY == "true"'
+      when: manual
+    - when: never
+
+# ────────────────────────────────
+# 💣 Terraform Destroy
+# ────────────────────────────────
+
+terraform_destroy:
+  stage: destroy
+  image: ubuntu:22.04
+  before_script:
+    - apt-get update && apt-get install -y curl jq python3-pip unzip gnupg software-properties-common
+    - pip3 install azure-cli
+    - curl -fsSL https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip -o terraform.zip
+    - unzip terraform.zip && mv terraform /usr/local/bin/terraform && terraform -version
+    - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
+  script:
+    - terraform -chdir=$WORKING_DIR init \
+        -backend-config="resource_group_name=$RESOURCE_GROUP" \
+        -backend-config="storage_account_name=$STORAGE_ACCOUNT" \
+        -backend-config="container_name=$CONTAINER_NAME" \
+        -backend-config="key=$BACKEND_KEY" \
+        -reconfigure -upgrade \
+        -var="sql_admin_username=$SQL_ADMIN_USERNAME" \
+        -var="sql_admin_password=$SQL_ADMIN_PASSWORD" \
+        -var="subscription_id=$SUBSCRIPTION_ID"
+    - terraform -chdir=$WORKING_DIR show
+    - terraform -chdir=$WORKING_DIR destroy -auto-approve \
+        -var="sql_admin_username=$SQL_ADMIN_USERNAME" \
+        -var="sql_admin_password=$SQL_ADMIN_PASSWORD" \
+        -var="subscription_id=$SUBSCRIPTION_ID"
+  rules:
+    - if: '$RUN_DESTROY == "true"'
+      when: manual
+    - when: never
