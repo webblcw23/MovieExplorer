@@ -7,8 +7,7 @@ stages:
   - terraformplan
   - terraformapply
   - deployapp
-  - destroy
-  
+  - destroy  
 
 include:
   - local: 'GitLab/.gitlab-ci-core.yml'
