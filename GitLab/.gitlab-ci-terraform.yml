@@ -49,4 +49,6 @@ terraformapply:
   needs: [terraformplan]
   image: hashicorp/terraform:latest
   script:
-    -
+    - echo "Applying Terraform..."
+    - terraform -chdir=$WORKING_DIR apply -auto-approve -var="subscription_id=$SUBSCRIPTION_ID" -var="sql_admin_username=$SQL_ADMIN_USERNAME" -var="sql_admin_password=$SQL_ADMIN_PASSWORD"
+    - echo "Terraform applied successfully."
