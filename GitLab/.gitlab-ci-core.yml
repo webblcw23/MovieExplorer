@@ -1,6 +1,8 @@
 workflow:
   rules:
-    - if: '$RUN_CORE_SETUP == "true"'
+    - if: '$RUN_MAIN_TF == "true"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "web"'
       when: always
     - when: never
 
