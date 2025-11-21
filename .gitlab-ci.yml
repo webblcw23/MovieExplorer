@@ -47,6 +47,8 @@ create_storage:
   script:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
     - az storage account create --name "$STORAGE_ACCOUNT" --resource-group "$RESOURCE_GROUP" --location "$LOCATION" --sku Standard_LRS
+  needs:
+    - create_rg
 
 create_container:
   stage: core
@@ -54,7 +56,8 @@ create_container:
   script:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
     - az storage container create --name "$CONTAINER_NAME" --account-name "$STORAGE_ACCOUNT"
-  
+  needs:
+    - create_storage
 
 create_acr:
   stage: core
@@ -62,7 +65,8 @@ create_acr:
   script:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
     - az acr create --name "$ACR_NAME" --resource-group "$RESOURCE_GROUP" --sku Basic --location "$LOCATION"
-
+  needs:
+    - create_container
 
 # ────────────────────────────────
 # 🌍 Terraform Infrastructure
@@ -90,8 +94,11 @@ terraformplan:
   image: hashicorp/terraform:latest
   script:
     - terraform -chdir=$WORKING_DIR plan -var="subscription_id=$SUBSCRIPTION_ID" -var="sql_admin_username=$SQL_ADMIN_USERNAME" -var="sql_admin_password=$SQL_ADMIN_PASSWORD"
+  needs:
+    - terraforminit
   rules:
    - when: manual
+
 
 
 terraformapply:
@@ -99,6 +106,8 @@ terraformapply:
   image: hashicorp/terraform:latest
   script:
     - terraform -chdir=$WORKING_DIR apply -auto-approve -var="subscription_id=$SUBSCRIPTION_ID" -var="sql_admin_username=$SQL_ADMIN_USERNAME" -var="sql_admin_password=$SQL_ADMIN_PASSWORD"
+  needs:
+    - terraformplan
   rules:
    - when: manual
 
