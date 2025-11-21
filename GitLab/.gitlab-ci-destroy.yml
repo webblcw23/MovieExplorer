@@ -1,3 +1,9 @@
+workflow:
+  rules:
+    - if: '$RUN_DESTROY == "true"'
+      when: always
+    - when: never
+
 stages:
   - destroy
 
@@ -11,8 +17,6 @@ variables:
 terraform_destroy:
   stage: destroy
   image: ubuntu:22.04
-  rules:
-    - when: manual
   before_script:
     - apt-get update && apt-get install -y curl jq python3-pip unzip gnupg software-properties-common
     - pip3 install azure-cli
@@ -21,9 +25,20 @@ terraform_destroy:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
   script:
     - echo "Initializing Terraform..."
-    - terraform -chdir=$WORKING_DIR init -backend-config="resource_group_name=$RESOURCE_GROUP" -backend-config="storage_account_name=$STORAGE_ACCOUNT" -backend-config="container_name=$CONTAINER_NAME" -backend-config="key=$BACKEND_KEY" -reconfigure -upgrade -var="sql_admin_username=$SQL_ADMIN_USERNAME" -var="sql_admin_password=$SQL_ADMIN_PASSWORD" -var="subscription_id=$SUBSCRIPTION_ID"
+    - terraform -chdir=$WORKING_DIR init \
+        -backend-config="resource_group_name=$RESOURCE_GROUP" \
+        -backend-config="storage_account_name=$STORAGE_ACCOUNT" \
+        -backend-config="container_name=$CONTAINER_NAME" \
+        -backend-config="key=$BACKEND_KEY" \
+        -reconfigure -upgrade \
+        -var="sql_admin_username=$SQL_ADMIN_USERNAME" \
+        -var="sql_admin_password=$SQL_ADMIN_PASSWORD" \
+        -var="subscription_id=$SUBSCRIPTION_ID"
     - echo "Showing current Terraform state..."
     - terraform -chdir=$WORKING_DIR show
     - echo "Destroying infrastructure..."
-    - terraform -chdir=$WORKING_DIR destroy -auto-approve -var="sql_admin_username=$SQL_ADMIN_USERNAME" -var="sql_admin_password=$SQL_ADMIN_PASSWORD" -var="subscription_id=$SUBSCRIPTION_ID"
+    - terraform -chdir=$WORKING_DIR destroy -auto-approve \
+        -var="sql_admin_username=$SQL_ADMIN_USERNAME" \
+        -var="sql_admin_password=$SQL_ADMIN_PASSWORD" \
+        -var="subscription_id=$SUBSCRIPTION_ID"
     - echo "Terraform destroy complete."

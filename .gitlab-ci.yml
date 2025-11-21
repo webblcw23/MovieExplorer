@@ -10,7 +10,7 @@ stages:
   - destroy
 
 include:
-  - local: 'Gitlab/.gitlab-ci-core.yml'
-  - local: 'Gitlab/.gitlab-ci-terraform.yml'
-  - local: 'Gitlab/.gitlab-ci-deployapp.yml'
-  - local: 'Gitlab/.gitlab-ci-destroy.yml'
+  - local: 'GitLab/.gitlab-ci-core.yml'
+  - local: 'GitLab/.gitlab-ci-terraform.yml'
+  - local: 'GitLab/.gitlab-ci-deployapp.yml'
+  - local: 'GitLab/.gitlab-ci-destroy.yml'
