@@ -3,16 +3,7 @@ workflow:
     - when: always  # Always create a pipeline on push
 
 stages:
-  - noop            # Add a dummy stage to anchor the pipeline
-  - rg
-  - storage
-  - container
-  - acr
-  - terraforminit
-  - terraformplan
-  - terraformapply
-  - deployapp
-  - destroy
+  - noop
 
 noop_job:
   stage: noop
