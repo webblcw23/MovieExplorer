@@ -17,21 +17,6 @@ stages:
 # 🧱 Core Infrastructure Setup
 # ────────────────────────────────
 
-workflow:
-  rules:
-    - when: always
-
-stages:
-  - rg
-  - storage
-  - container
-  - acr
-  - terraforminit
-  - terraformplan
-  - terraformapply
-  - deployapp
-  - destroy
-
 variables:
   # Core infra
   LOCATION: "uksouth"
