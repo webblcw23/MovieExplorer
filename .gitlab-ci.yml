@@ -3,7 +3,6 @@ workflow:
     - when: always  # Always create a pipeline on push
 
 stages:
-  - noop
   - rg
   - storage
   - container
@@ -13,15 +12,6 @@ stages:
   - terraformapply
   - deployapp
   - destroy
-
-# Placeholder job to anchor pipeline
-noop_job:
-  stage: noop
-  script:
-    - echo "Pipeline created. Awaiting manual triggers."
-  when: manual
-  rules:
-    - when: always
 
 # ────────────────────────────────
 # 🧱 Core Infrastructure Setup
@@ -41,9 +31,7 @@ create_rg:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
     - az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
   rules:
-    - if: '$RUN_CORE_SETUP == "true"'
-      when: manual
-    - when: never
+    - when: manual
 
 create_storage:
   stage: storage
@@ -53,9 +41,7 @@ create_storage:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
     - az storage account create --name "$STORAGE_ACCOUNT" --resource-group "$RESOURCE_GROUP" --location "$LOCATION" --sku Standard_LRS
   rules:
-    - if: '$RUN_CORE_SETUP == "true"'
-      when: manual
-    - when: never
+    - when: manual
 
 create_container:
   stage: container
@@ -65,9 +51,7 @@ create_container:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
     - az storage container create --name "$CONTAINER_NAME" --account-name "$STORAGE_ACCOUNT"
   rules:
-    - if: '$RUN_CORE_SETUP == "true"'
-      when: manual
-    - when: never
+    - when: manual
 
 create_acr:
   stage: acr
@@ -77,9 +61,7 @@ create_acr:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
     - az acr create --name "$ACR_NAME" --resource-group "$RESOURCE_GROUP" --sku Basic --location "$LOCATION"
   rules:
-    - if: '$RUN_CORE_SETUP == "true"'
-      when: manual
-    - when: never
+    - when: manual
 
 # ────────────────────────────────
 # 🌍 Terraform Infrastructure
