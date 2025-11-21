@@ -1,9 +1,7 @@
 workflow:
   rules:
     - if: '$RUN_DESTROY == "true"'
-      when: always
-    - when: never
-
+      when: manual
 stages:
   - destroy
 

@@ -1,8 +1,7 @@
 workflow:
   rules:
     - if: '$RUN_MAIN_TF == "true"'
-      when: always
-    - when: never
+      when: manual
 
 stages:
   - terraforminit

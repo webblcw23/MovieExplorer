@@ -1,8 +1,7 @@
 workflow:
   rules:
     - if: '$RUN_APP_DEPLOY == "true"'
-      when: always
-    - when: never
+      when: manual
 
 stages:
   - deployapp
