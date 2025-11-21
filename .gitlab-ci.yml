@@ -1,15 +1,9 @@
 workflow:
-  rules:
-    - when: always  # Always create a pipeline on push
+  when: always  # Always create a pipeline on push
 
 stages:
-  - rg
-  - storage
-  - container
-  - acr
-  - terraforminit
-  - terraformplan
-  - terraformapply
+  - core 
+  - terraform
   - deployapp
   - destroy
 
@@ -38,50 +32,42 @@ variables:
 
 
 create_rg:
-  stage: rg
+  stage: core
   image: mcr.microsoft.com/azure-cli
   script:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
     - az group create --name "$RESOURCE_GROUP" --location "$LOCATION"
-  rules:
-    - when: manual
+  when: manual
 
 create_storage:
-  stage: storage
-  needs: [create_rg]
+  stage: core
   image: mcr.microsoft.com/azure-cli
   script:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
     - az storage account create --name "$STORAGE_ACCOUNT" --resource-group "$RESOURCE_GROUP" --location "$LOCATION" --sku Standard_LRS
-  rules:
-    - when: manual
 
 create_container:
-  stage: container
-  needs: [create_storage]
+  stage: core
   image: mcr.microsoft.com/azure-cli
   script:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
     - az storage container create --name "$CONTAINER_NAME" --account-name "$STORAGE_ACCOUNT"
-  rules:
-    - when: manual
+  
 
 create_acr:
-  stage: acr
-  needs: [create_container]
+  stage: core
   image: mcr.microsoft.com/azure-cli
   script:
     - az login --service-principal --username "$AZURE_CLIENT_ID" --password "$AZURE_CLIENT_SECRET_GITLAB" --tenant "$AZURE_TENANT_ID"
     - az acr create --name "$ACR_NAME" --resource-group "$RESOURCE_GROUP" --sku Basic --location "$LOCATION"
-  rules:
-    - when: manual
+
 
 # ────────────────────────────────
 # 🌍 Terraform Infrastructure
 # ────────────────────────────────
 
 terraforminit:
-  stage: terraforminit
+  stage: terraform
   image: ubuntu:22.04
   before_script:
     - apt-get update && apt-get install -y curl jq python3-pip unzip gnupg software-properties-common
@@ -94,30 +80,25 @@ terraforminit:
     - terraform -chdir=$WORKING_DIR validate
     - terraform -chdir=$WORKING_DIR fmt -recursive
   rules:
-    - if: '$RUN_MAIN_TF == "true"'
-      when: manual
+   - when: manual
 
 
 terraformplan:
-  stage: terraformplan  
-  needs: [terraforminit]  
+  stage: terraform  
   image: hashicorp/terraform:latest
   script:
     - terraform -chdir=$WORKING_DIR plan -var="subscription_id=$SUBSCRIPTION_ID" -var="sql_admin_username=$SQL_ADMIN_USERNAME" -var="sql_admin_password=$SQL_ADMIN_PASSWORD"
   rules:
-    - if: '$RUN_MAIN_TF == "true"'
-      when: manual
+   - when: manual
 
 
 terraformapply:
-  stage: terraformapply
-  needs: [terraformplan]
+  stage: terraform
   image: hashicorp/terraform:latest
   script:
     - terraform -chdir=$WORKING_DIR apply -auto-approve -var="subscription_id=$SUBSCRIPTION_ID" -var="sql_admin_username=$SQL_ADMIN_USERNAME" -var="sql_admin_password=$SQL_ADMIN_PASSWORD"
   rules:
-    - if: '$RUN_MAIN_TF == "true"'
-      when: manual
+   - when: manual
 
 
 # ────────────────────────────────
@@ -139,8 +120,7 @@ deploy_app:
     - IP=$(az webapp show --name "$WEBAPP_NAME" --resource-group "$RESOURCE_GROUP" --query outboundIpAddresses -o tsv)
     - az sql server firewall-rule create --resource-group "$RESOURCE_GROUP" --server "$SQL_SERVER_NAME" --name "AllowAppService" --start-ip-address "$IP" --end-ip-address "$IP"
   rules:
-    - if: '$RUN_APP_DEPLOY == "true"'
-      when: manual
+   - when: manual
 
 
 # ────────────────────────────────
@@ -172,5 +152,4 @@ terraform_destroy:
         -var="sql_admin_password=$SQL_ADMIN_PASSWORD" \
         -var="subscription_id=$SUBSCRIPTION_ID"
   rules:
-    - if: '$RUN_DESTROY == "true"'
-      when: manual
+   - when: manual
