@@ -1,8 +1,9 @@
 workflow:
   rules:
-    - when: always
+    - when: always  # Always create a pipeline on push
 
 stages:
+  - noop            # Add a dummy stage to anchor the pipeline
   - rg
   - storage
   - container
@@ -13,11 +14,16 @@ stages:
   - deployapp
   - destroy
 
+noop_job:
+  stage: noop
+  script:
+    - echo "This is a placeholder job to make the pipeline visible."
+  when: manual
+  rules:
+    - when: always
+
 include:
   - local: 'GitLab/.gitlab-ci-core.yml'
   - local: 'GitLab/.gitlab-ci-terraform.yml'
   - local: 'GitLab/.gitlab-ci-deployapp.yml'
   - local: 'GitLab/.gitlab-ci-destroy.yml'
-
-
-
